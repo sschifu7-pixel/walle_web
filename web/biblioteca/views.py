@@ -94,11 +94,56 @@ def historial_view(request):
     return render(request, 'historial.html', {'prestamos': prestamos, 'accesos': accesos})
 
 
+def limpiar_uid(uid_raw):
+    """
+    Normaliza UIDs NFC quitando espacios, prefijos 0x/0X, dos puntos, guiones y puntos.
+    Ejemplo: '0X04 0X12 0XE3 0XA2' -> '0412E3A2'
+    """
+    if not uid_raw:
+        return ""
+    uid_str = str(uid_raw).strip().upper()
+    return uid_str.replace("0X", "").replace(":", "").replace("-", "").replace(".", "").replace(" ", "")
+
+
+def buscar_alumno_por_nfc(nfc_uid):
+    if not nfc_uid:
+        return None
+    alumno = Alumno.objects.filter(nfc_uid__iexact=nfc_uid).first()
+    if alumno:
+        return alumno
+
+    uid_clean = limpiar_uid(nfc_uid)
+    if not uid_clean:
+        return None
+
+    for a in Alumno.objects.all():
+        if limpiar_uid(a.nfc_uid) == uid_clean:
+            return a
+    return None
+
+
+def buscar_libro_por_nfc(nfc_uid):
+    if not nfc_uid:
+        return None
+    libro = Libro.objects.filter(nfc_uid__iexact=nfc_uid).first()
+    if libro:
+        return libro
+
+    uid_clean = limpiar_uid(nfc_uid)
+    if not uid_clean:
+        return None
+
+    for l in Libro.objects.filter(nfc_uid__isnull=False):
+        if limpiar_uid(l.nfc_uid) == uid_clean:
+            return l
+    return None
+
+
 @csrf_exempt
 def api_procesar_nfc(request):
     """
     Endpoint API REST / AJAX para procesar lecturas NFC (Addr04) en tiempo real
-    Acepta tanto JSON como Form-Data.
+    Acepta tanto JSON como Form-Data. Compatible con cliente web y POST directo desde ESP32.
     """
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido. Use POST.'}, status=405)
@@ -121,7 +166,7 @@ def api_procesar_nfc(request):
         # MODO PRÉSTAMO
         if modo == 'prestamo':
             # 1. Buscar si el NFC pertenece a un alumno
-            alumno = Alumno.objects.filter(nfc_uid=nfc_uid).first()
+            alumno = buscar_alumno_por_nfc(nfc_uid)
             if alumno:
                 if alumno.acceso_permitido:
                     # Registrar acceso a la biblioteca
@@ -142,20 +187,20 @@ def api_procesar_nfc(request):
                     })
 
             # 2. Buscar si el NFC pertenece a un libro
-            libro = Libro.objects.filter(nfc_uid=nfc_uid).first()
+            libro = buscar_libro_por_nfc(nfc_uid)
             if libro:
                 if alumno_uid_memoria:
-                    alumno = Alumno.objects.filter(nfc_uid=alumno_uid_memoria).first()
-                    if not alumno:
+                    alumno_en_memoria = buscar_alumno_por_nfc(alumno_uid_memoria)
+                    if not alumno_en_memoria:
                         return JsonResponse({
                             'status': 'error',
                             'type': 'libro',
-                            'message': "ERROR: ALUMNO EN MEMORIA NO VALIDO"
+                            'message': "ERROR: ALUMNO EN MEMORIA NO VÁLIDO"
                         })
 
                     if libro.estado == 'Disponible':
                         with transaction.atomic():
-                            Prestamo.objects.create(libro=libro, alumno=alumno)
+                            Prestamo.objects.create(libro=libro, alumno=alumno_en_memoria)
                             libro.estado = 'Prestado'
                             libro.save()
 
@@ -163,7 +208,7 @@ def api_procesar_nfc(request):
                             'status': 'success',
                             'type': 'prestamo_completado',
                             'libro': libro.titulo,
-                            'alumno': alumno.nombre,
+                            'alumno': alumno_en_memoria.nombre,
                             'message': f"PRÉSTAMO ÉXITOSO!\nLIBRO: [{libro.titulo}]"
                         })
                     else:
@@ -188,7 +233,7 @@ def api_procesar_nfc(request):
 
         # MODO DEVOLUCIÓN
         else:
-            libro = Libro.objects.filter(nfc_uid=nfc_uid).first()
+            libro = buscar_libro_por_nfc(nfc_uid)
             if libro:
                 if libro.estado == 'Prestado':
                     with transaction.atomic():
@@ -227,3 +272,4 @@ def api_procesar_nfc(request):
 
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f"Error interno en servidor: {str(e)}"}, status=500)
+

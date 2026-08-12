@@ -79,8 +79,6 @@ void moverServosAlDetectar();
 void actualizarPantallaLCD(String linea1, String linea2);
 void handleRoot();
 void handleStatus();
-void handleOptions();
-
 
 void setup() {
   Serial.begin(115200);
@@ -160,16 +158,12 @@ void setup() {
 
   // 5. Configurar Servidor Web
   server.on("/", handleRoot);
-  server.on("/api/status", HTTP_GET, handleStatus);
-  server.on("/api/status", HTTP_OPTIONS, handleOptions);
+  server.on("/api/status", handleStatus);
   server.begin();
 
-  if (MDNS.begin("Wall-e")) {
-    Serial.println(F("🌐 Nombre de dominio mDNS: http://Wall-e.local"));
-  } else if (MDNS.begin("guali")) {
-    Serial.println(F("🌐 Nombre de dominio mDNS (fallback): http://guali.local"));
+  if (MDNS.begin("guali")) {
+    Serial.println(F("🌐 Nombre de dominio: http://Wall-e.local"));
   }
-
 
   Serial.println(F("🚀 Servidor Web iniciado correctamente."));
 }
@@ -437,17 +431,8 @@ void handleRoot() {
   server.send(200, "text/html", html);
 }
 
-void handleOptions() {
-  server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  server.sendHeader("Access-Control-Allow-Headers", "*");
-  server.send(204);
-}
-
 void handleStatus() {
   server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  server.sendHeader("Access-Control-Allow-Headers", "*");
   server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
   String json = "{";
@@ -462,4 +447,3 @@ void handleStatus() {
 
   server.send(200, "application/json", json);
 }
-

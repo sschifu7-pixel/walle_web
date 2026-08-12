@@ -158,17 +158,16 @@ class WalleNFCController {
 
   // 📡 CONEXIÓN CON ESP32 HARDWARE EN RED LOCAL (mDNS http://Wall-e.local o IP Configurable)
   async initESP32HardwareListener() {
-    let hostsParaProbar = [
-      localStorage.getItem('esp32_ip') || '',
-      'http://Wall-e.local',
-      'http://guali.local',
-      'http://192.168.1.72'
-    ].filter(h => h.trim() !== '');
-
-    let hostActivoIndex = 0;
+    this.reconstruirHostsESP32();
 
     const consultarESP32 = async () => {
-      const hostActual = hostsParaProbar[hostActivoIndex];
+      if (!this.hostsParaProbar || this.hostsParaProbar.length === 0) {
+        this.reconstruirHostsESP32();
+      }
+
+      const hostActual = this.hostsParaProbar[this.hostActivoIndex];
+      if (!hostActual) return;
+
       const urlHost = hostActual.startsWith('http') ? hostActual : `http://${hostActual}`;
 
       try {
@@ -178,7 +177,8 @@ class WalleNFCController {
         // Si el ESP32 respondió correctamente, actualizar el indicador de estado
         if (this.nfcStatusBadge && this.nfcStatusText) {
           this.nfcStatusBadge.querySelector('.status-dot').className = "status-dot green";
-          this.nfcStatusText.innerText = `📡 ESP32 Conectado (${hostActual.replace('http://', '')})`;
+          const hostLimpio = urlHost.replace('http://', '').replace('/', '');
+          this.nfcStatusText.innerText = `📡 ESP32 Conectado (${hostLimpio})`;
         }
 
         // Si hay un nuevo UID escaneado por el PN532
@@ -201,10 +201,10 @@ class WalleNFCController {
         }
       } catch (err) {
         // Probar el siguiente host en la lista si falló la conexión
-        hostActivoIndex = (hostActivoIndex + 1) % hostsParaProbar.length;
-        if (this.nfcStatusBadge && this.nfcStatusText && hostActivoIndex === 0) {
+        this.hostActivoIndex = (this.hostActivoIndex + 1) % this.hostsParaProbar.length;
+        if (this.nfcStatusBadge && this.nfcStatusText && this.hostActivoIndex === 0) {
           this.nfcStatusBadge.querySelector('.status-dot').className = "status-dot yellow";
-          this.nfcStatusText.innerText = "📡 Buscando ESP32 en la red local (Wall-e.local / Wi-Fi)...";
+          this.nfcStatusText.innerText = "📡 Buscando ESP32 en la red local (192.168.4.1 / Wall-e.local)...";
         }
       }
     };
@@ -212,6 +212,35 @@ class WalleNFCController {
     // Consultar el estado del ESP32 cada 350 ms
     setInterval(consultarESP32, 350);
   }
+
+  reconstruirHostsESP32() {
+    const customIp = (localStorage.getItem('esp32_ip') || '').trim();
+    const listaBase = [
+      customIp,
+      '192.168.4.1',
+      'Wall-e.local',
+      'guali.local',
+      '192.168.1.72',
+      '192.168.0.72',
+      '192.168.1.100'
+    ];
+
+    // Filtrar elementos vacíos y eliminar duplicados manteniendo el orden
+    this.hostsParaProbar = [...new Set(listaBase.filter(h => h && h.length > 0))];
+    this.hostActivoIndex = 0;
+  }
+
+  configurarIPESP32(nuevaIP) {
+    if (!nuevaIP) return;
+    const ipLimpia = nuevaIP.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    if (ipLimpia) {
+      localStorage.setItem('esp32_ip', ipLimpia);
+      this.reconstruirHostsESP32();
+      this.log(`⚙️ IP del ESP32 configurada manualmente a: http://${ipLimpia}`);
+      this.updateLCD(`CONFIGURANDO ESP32...\nIP: ${ipLimpia}`, 'normal');
+    }
+  }
+
 
   async initAndroidNFC() {
     if ('NDEFReader' in window) {

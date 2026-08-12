@@ -46,12 +46,15 @@
     <div class="panel-title">
       <span>🤖 TERMINAL PANTALLA LCD (WALL-E HARDWARE SIMULATOR)</span>
     </div>
-    <div style="display: flex; gap: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
       <button id="btn-prestamo" class="btn-mode btn-mode-prestamo active">
         📥 [IN] MODO PRÉSTAMO
       </button>
       <button id="btn-devolucion" class="btn-mode btn-mode-devolucion">
         📤 [OUT] MODO DEVOLUCIÓN
+      </button>
+      <button type="button" onclick="configurarIPPrompt()" class="btn-mode" style="background: rgba(56, 189, 248, 0.15); border-color: var(--bnl-cyan); color: var(--bnl-cyan);">
+        ⚙️ IP ESP32
       </button>
     </div>
   </div>
@@ -60,12 +63,25 @@
   <div id="lcd-screen" class="lcd-screen-container">
     <div id="lcd-text" class="lcd-text">ESPERANDO CREDENCIAL (ADDR04)...</div>
     
-    <!-- Status Badge Android -->
-    <div class="nfc-status-badge" id="nfcStatusBadge">
-      <span class="status-dot green"></span>
-      <span id="nfcStatusText">Lector NFC Android activo y listo</span>
+    <!-- Status Badge Android / ESP32 -->
+    <div class="nfc-status-badge" id="nfcStatusBadge" onclick="configurarIPPrompt()" style="cursor: pointer;" title="Haga clic para cambiar la IP del ESP32">
+      <span class="status-dot yellow"></span>
+      <span id="nfcStatusText">📡 Buscando ESP32 en la red local (192.168.4.1 / Wall-e.local)...</span>
     </div>
   </div>
+
+  <script>
+    function configurarIPPrompt() {
+      const actual = localStorage.getItem('esp32_ip') || '192.168.4.1';
+      const ip = prompt('Ingrese la dirección IP o nombre mDNS del ESP32:\n(Ejemplos: 192.168.4.1 , 192.168.1.72 , Wall-e.local)', actual);
+      if (ip !== null && ip.trim() !== '') {
+        if (window.walleNfcApp) {
+          window.walleNfcApp.configurarIPESP32(ip);
+        }
+      }
+    }
+  </script>
+
 
 
 
