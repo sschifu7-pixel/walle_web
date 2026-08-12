@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogo de Libros - Wall-E OS{% endblock %}
+
+{% block content %}
+<div class="bnl-panel">
+  <div class="bnl-panel-header">
+    <div class="panel-title">📚 CATÁLOGO Y REGISTRO DE LIBROS</div>
+  </div>
+
+  <!-- Formulario de Alta Rápida de Libro -->
+  <form method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 150px; gap: 1rem; margin-bottom: 2rem; background: rgba(0,0,0,0.3); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+    {% csrf_token %}
+    <div>
+      <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Título del Libro *</label>
+      <input type="text" name="titulo" class="nfc-input" placeholder="Ej. El Principito" required>
+    </div>
+    <div>
+      <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Autor *</label>
+      <input type="text" name="autor" class="nfc-input" placeholder="Ej. Antoine de Saint-Exupéry" required>
+    </div>
+    <div>
+      <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">NFC UID (Addr04 Hex)</label>
+      <input type="text" name="nfc_uid" class="nfc-input" placeholder="Ej. B2C3D4E5">
+    </div>
+    <div>
+      <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">ISBN</label>
+      <input type="text" name="isbn" class="nfc-input" placeholder="Ej. 978-0156013987">
+    </div>
+    <div style="display: flex; align-items: flex-end;">
+      <button type="submit" class="btn-submit-nfc" style="height: 44px; width: 100%;">+ REGISTRAR</button>
+    </div>
+  </form>
+
+  <!-- Buscador y Tabla de Libros -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 style="font-family: 'Orbitron'; font-size: 1rem; color: var(--chasis-amber);">LIBROS REGISTRADOS</h3>
+    <form method="GET" style="display: flex; gap: 0.5rem;">
+      <input type="text" name="q" value="{{ query }}" class="nfc-input" placeholder="Buscar por título, autor o NFC..." style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+      <button type="submit" class="btn-submit-nfc" style="padding: 0 1rem; font-size: 0.85rem;">Buscar</button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="bnl-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Autor</th>
+          <th>NFC UID (Addr04)</th>
+          <th>ISBN</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for libro in libros %}
+        <tr>
+          <td>#{{ libro.id }}</td>
+          <td><strong>{{ libro.titulo }}</strong></td>
+          <td>{{ libro.autor }}</td>
+          <td><code>{{ libro.nfc_uid|default:"Sin Tag NFC" }}</code></td>
+          <td>{{ libro.isbn|default:"--" }}</td>
+          <td>
+            {% if libro.estado == 'Disponible' %}
+              <span class="status-badge badge-disponible">DISPONIBLE</span>
+            {% else %}
+              <span class="status-badge badge-prestado">{{ libro.estado }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No se encontraron libros en el catálogo.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard LCD - Wall-E OS{% endblock %}
+
+{% block content %}
+
+<!-- Quick Statistics Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div>
+      <div class="stat-val">{{ total_libros }}</div>
+      <div class="stat-lbl">Total Libros Registrados</div>
+    </div>
+    <div style="font-size: 2rem;">📚</div>
+  </div>
+
+  <div class="stat-card" style="border-left-color: var(--lcd-red);">
+    <div>
+      <div class="stat-val" style="color: var(--lcd-red);">{{ libros_prestados }}</div>
+      <div class="stat-lbl">Préstamos Activos</div>
+    </div>
+    <div style="font-size: 2rem;">🔄</div>
+  </div>
+
+  <div class="stat-card" style="border-left-color: var(--lcd-green);">
+    <div>
+      <div class="stat-val" style="color: var(--lcd-green);">{{ libros_disponibles }}</div>
+      <div class="stat-lbl">Libros Disponibles</div>
+    </div>
+    <div style="font-size: 2rem;">✅</div>
+  </div>
+
+  <div class="stat-card" style="border-left-color: var(--lcd-cyan);">
+    <div>
+      <div class="stat-val" style="color: var(--lcd-cyan);">{{ total_alumnos }}</div>
+      <div class="stat-lbl">Alumnos Registrados</div>
+    </div>
+    <div style="font-size: 2rem;">🎓</div>
+  </div>
+</div>
+
+<!-- Main LCD Hardware Terminal Simulation -->
+<div class="bnl-panel">
+  <div class="bnl-panel-header">
+    <div class="panel-title">
+      <span>🤖 TERMINAL PANTALLA LCD (WALL-E HARDWARE SIMULATOR)</span>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button id="btn-prestamo" class="btn-mode btn-mode-prestamo active">
+        📥 [IN] MODO PRÉSTAMO
+      </button>
+      <button id="btn-devolucion" class="btn-mode btn-mode-devolucion">
+        📤 [OUT] MODO DEVOLUCIÓN
+      </button>
+    </div>
+  </div>
+
+  <!-- LCD Screen Container -->
+  <div id="lcd-screen" class="lcd-screen-container">
+    <div id="lcd-text" class="lcd-text">ESPERANDO CREDENCIAL (ADDR04)...</div>
+    
+    <!-- Status Badge Android -->
+    <div class="nfc-status-badge" id="nfcStatusBadge">
+      <span class="status-dot green"></span>
+      <span id="nfcStatusText">Lector NFC Android activo y listo</span>
+    </div>
+  </div>
+
+
+
+  <!-- Scanner Input Barcode / USB NFC / Keyboard simulator -->
+  <form id="nfc-form" class="nfc-input-box">
+    <input type="text" id="nfc-input" class="nfc-input" placeholder="Escanee tarjeta NFC o ingrese código UID Addr04..." autocomplete="off" autofocus>
+    <button type="submit" class="btn-submit-nfc">PROCESAR LECTURA</button>
+  </form>
+</div>
+
+<!-- Live Console Logs & Recent Loans Split Section -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+  
+  <!-- Live SQL / Transaction Console Logs -->
+  <div class="bnl-panel">
+    <div class="bnl-panel-header">
+      <div class="panel-title" style="font-size: 1rem;">💻 LOGS DE TRANSACCIONES Y CONSULTAS EN VIVO</div>
+    </div>
+    <div id="terminal-logs" class="terminal-log-container">
+      <div class="log-entry"><span class="log-timestamp">[SISTEMA]</span> Servidor Django iniciado correctamente.</div>
+      <div class="log-entry"><span class="log-timestamp">[SISTEMA]</span> Lector NFC listo para capturar peticiones Addr04.</div>
+    </div>
+  </div>
+
+  <!-- Recent Loans Table -->
+  <div class="bnl-panel">
+    <div class="bnl-panel-header">
+      <div class="panel-title" style="font-size: 1rem;">📖 PRÉSTAMOS RECIENTES</div>
+    </div>
+    <div class="table-responsive">
+      <table class="bnl-table">
+        <thead>
+          <tr>
+            <th>Libro</th>
+            <th>Alumno</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in prestamos_recientes %}
+          <tr>
+            <td><strong>{{ p.libro.titulo }}</strong></td>
+            <td>{{ p.alumno.nombre }}</td>
+            <td>{{ p.fecha_prestamo|date:"H:i - d/m" }}</td>
+            <td>
+              {% if p.fecha_devolucion %}
+                <span class="status-badge badge-disponible">DEVUELTO</span>
+              {% else %}
+                <span class="status-badge badge-prestado">ACTIVO</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-muted);">No hay préstamos registrados aún.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

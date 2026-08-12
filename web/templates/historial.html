@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial Completo - Wall-E OS{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+
+  <!-- Full Loans History -->
+  <div class="bnl-panel">
+    <div class="bnl-panel-header">
+      <div class="panel-title">📜 HISTORIAL DE PRÉSTAMOS</div>
+    </div>
+    <div class="table-responsive">
+      <table class="bnl-table">
+        <thead>
+          <tr>
+            <th>Libro</th>
+            <th>Alumno</th>
+            <th>Préstamo</th>
+            <th>Devolución</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in prestamos %}
+          <tr>
+            <td><strong>{{ p.libro.titulo }}</strong></td>
+            <td>{{ p.alumno.nombre }}</td>
+            <td>{{ p.fecha_prestamo|date:"d/m/Y H:i" }}</td>
+            <td>
+              {% if p.fecha_devolucion %}
+                <span style="color: var(--lcd-green);">{{ p.fecha_devolucion|date:"d/m/Y H:i" }}</span>
+              {% else %}
+                <span class="status-badge badge-prestado">EN PRÉSTAMO</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No hay historial de préstamos registrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Access Logs History -->
+  <div class="bnl-panel">
+    <div class="bnl-panel-header">
+      <div class="panel-title">🚪 BITÁCORA DE INGRESOS A BIBLIOTECA</div>
+    </div>
+    <div class="table-responsive">
+      <table class="bnl-table">
+        <thead>
+          <tr>
+            <th>Alumno</th>
+            <th>Matrícula</th>
+            <th>Área</th>
+            <th>Fecha y Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for acc in accesos %}
+          <tr>
+            <td><strong>{{ acc.alumno.nombre }}</strong></td>
+            <td>{{ acc.alumno.numero_control }}</td>
+            <td>{{ acc.area.nombre_area|default:"General" }}</td>
+            <td><code>{{ acc.fecha_hora|date:"d/m/Y H:i:s" }}</code></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No hay registros de accesos recientes.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

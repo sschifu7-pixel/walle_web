@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2b2d42">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>{% block title %}Wall-E OS - Asistente de Biblioteca TESH{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/walle.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navbar Buy n Large / Wall-E OS -->
+  <header class="navbar-bnl">
+    <div class="brand-container">
+      <div class="brand-logo">BnL</div>
+      <div class="brand-title">WALL-E OS // BIBLIOTECA TESH</div>
+    </div>
+    
+    <nav>
+      <ul class="nav-links">
+        <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">🖥️ LCD Terminal</a></li>
+        <li><a href="{% url 'libros' %}" class="{% if request.resolver_match.url_name == 'libros' %}active{% endif %}">📚 Catálogo Libros</a></li>
+        <li><a href="{% url 'alumnos' %}" class="{% if request.resolver_match.url_name == 'alumnos' %}active{% endif %}">🎓 Alumnos</a></li>
+        <li><a href="{% url 'historial' %}" class="{% if request.resolver_match.url_name == 'historial' %}active{% endif %}">📜 Historial</a></li>
+        <li><a href="/admin/" target="_blank" class="admin-badge">⚡ Admin Panel</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-layout">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer-bnl">
+    SYSTEM STATUS: ONLINE | BUY N LARGE CORPORATE OS v4.0 | PROYECTO WALL-E ASSISTANT
+  </footer>
+
+  <script src="{% static 'js/nfc_handler.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
