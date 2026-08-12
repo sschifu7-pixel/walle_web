@@ -1,13 +1,12 @@
 /*
  * ============================================================================
- * PROYECTO Wall-E / Robot Gualí — ESP32 Firmware
- * Lector NFC PN532 (21/22) + Pantalla LCD 16x2 (16/17) + Servos (18/19)
+ * PROYECTO Wall-E / Robot Gualí — ESP32 Firmware (Nativo sin dependencias externas)
+ * Lector NFC PN532 (21/22) + Pantalla LCD 16x2 (16/17) + Servos PWM Nativo (18/19)
  * ============================================================================
  */
 
 #include <Adafruit_PN532.h>
 #include <BitBang_LiquidCrystal_I2C.h>
-#include <ESP32Servo.h>
 #include <ESPmDNS.h>
 #include <WebServer.h>
 #include <WiFi.h>
@@ -28,30 +27,35 @@ WebServer server(80);
 // ==========================================
 // CONFIGURACIÓN PANTALLA LCD 16x2 (GPIO 16 y 17)
 // ==========================================
-// Pines dedicados para la pantalla LCD para evitar conflictos I2C con el PN532
 const int PIN_LCD_SDA = 16; // GPIO 16 para SDA de la pantalla LCD
 const int PIN_LCD_SCL = 17; // GPIO 17 para SCL de la pantalla LCD
 
-// Instancia de LCD en pines 16 (SDA) y 17 (SCL)
 BitBang_LiquidCrystal_I2C lcd(0x27, 16, 2, PIN_LCD_SDA, PIN_LCD_SCL);
 bool lcdConectado = false;
 
 // ==========================================
-// CONFIGURACIÓN SERVOMOTORES SG90 (GPIO 18 y 19)
+// CONFIGURACIÓN SERVOMOTORES PWM NATIVO ESP32 (GPIO 18 y 19)
 // ==========================================
-Servo servoBrazoIzquierdo;
-Servo servoBrazoDerecho;
-
 const int PIN_SERVO_IZQ = 18; // GPIO 18 (Brazo Izquierdo)
 const int PIN_SERVO_DER = 19; // GPIO 19 (Brazo Derecho)
+
+const int CANAL_SERVO_IZQ = 0; // Canal PWM 0
+const int CANAL_SERVO_DER = 1; // Canal PWM 1
 
 int anguloServoIzq = 90;
 int anguloServoDer = 90;
 
+// Función nativa para posicionar servos sin requerir librerías externas
+void escribirAnguloServo(int canal, int angulo) {
+  // Mapeo para servomotores SG90 a 50Hz (resolución 10-bit 0-1023)
+  // 0° -> ~26 (~0.5ms), 180° -> ~128 (~2.5ms)
+  int duty = map(angulo, 0, 180, 26, 128);
+  ledcWrite(canal, duty);
+}
+
 // ==========================================
 // CONFIGURACIÓN LECTOR PN532 (GPIO 21 y 22)
 // ==========================================
-// El PN532 utiliza el bus I2C Hardware estándar en SDA = GPIO 21 y SCL = GPIO 22
 #define PN532_IRQ (-1)
 #define PN532_RESET (-1)
 
@@ -80,7 +84,7 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println(F("\n=========================================="));
-  Serial.println(F(" ROBOT WALL-E - LCD(16,17) SERVOS(18,19)  "));
+  Serial.println(F(" ROBOT WALL-E - FIRMWARE NATIVO (NO DEPENDENCIES) "));
   Serial.println(F("=========================================="));
 
   // 1. Inicializar Pantalla LCD en pines dedicados (SDA=16, SCL=17)
@@ -93,18 +97,23 @@ void setup() {
   lcdConectado = true;
   Serial.println(F("✅ Pantalla LCD 16x2 configurada en GPIO 16 (SDA) y GPIO 17 (SCL)."));
 
-  // 2. Inicializar Servomotores SG90
-  ESP32PWM::allocateTimer(0);
-  ESP32PWM::allocateTimer(1);
-  servoBrazoIzquierdo.setPeriodHertz(50);
-  servoBrazoDerecho.setPeriodHertz(50);
-  
-  servoBrazoIzquierdo.attach(PIN_SERVO_IZQ, 500, 2400);
-  servoBrazoDerecho.attach(PIN_SERVO_DER, 500, 2400);
-  
-  servoBrazoIzquierdo.write(90);
-  servoBrazoDerecho.write(90);
-  Serial.println(F("✅ Servomotores inicializados en GPIO 18 y GPIO 19."));
+  // 2. Inicializar Servomotores SG90 usando PWM nativo de ESP32 (sin librerías faltantes)
+  #if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    // Arduino ESP32 Core v3+
+    ledcAttach(PIN_SERVO_IZQ, 50, 10);
+    ledcAttach(PIN_SERVO_DER, 50, 10);
+  #else
+    // Arduino ESP32 Core v2
+    ledcSetup(CANAL_SERVO_IZQ, 50, 10); // 50Hz, 10 bits de resolución
+    ledcAttachPin(PIN_SERVO_IZQ, CANAL_SERVO_IZQ);
+
+    ledcSetup(CANAL_SERVO_DER, 50, 10);
+    ledcAttachPin(PIN_SERVO_DER, CANAL_SERVO_DER);
+  #endif
+
+  escribirAnguloServo(CANAL_SERVO_IZQ, 90);
+  escribirAnguloServo(CANAL_SERVO_DER, 90);
+  Serial.println(F("✅ Servomotores configurados con PWM nativo en GPIO 18 y 19."));
 
   // 3. Inicializar Lector NFC PN532 en bus I2C principal (SDA=21, SCL=22)
   Wire.begin(21, 22);
@@ -192,22 +201,22 @@ void moverServosAlDetectar() {
   // Gesto 1: Levantar brazos
   anguloServoIzq = 150;
   anguloServoDer = 30;
-  servoBrazoIzquierdo.write(anguloServoIzq);
-  servoBrazoDerecho.write(anguloServoDer);
+  escribirAnguloServo(CANAL_SERVO_IZQ, anguloServoIzq);
+  escribirAnguloServo(CANAL_SERVO_DER, anguloServoDer);
   delay(350);
 
   // Gesto 2: Saludo alternado
   anguloServoIzq = 30;
   anguloServoDer = 150;
-  servoBrazoIzquierdo.write(anguloServoIzq);
-  servoBrazoDerecho.write(anguloServoDer);
+  escribirAnguloServo(CANAL_SERVO_IZQ, anguloServoIzq);
+  escribirAnguloServo(CANAL_SERVO_DER, anguloServoDer);
   delay(350);
 
   // Gesto 3: Regreso suave a posición neutra (90°)
   anguloServoIzq = 90;
   anguloServoDer = 90;
-  servoBrazoIzquierdo.write(anguloServoIzq);
-  servoBrazoDerecho.write(anguloServoDer);
+  escribirAnguloServo(CANAL_SERVO_IZQ, anguloServoIzq);
+  escribirAnguloServo(CANAL_SERVO_DER, anguloServoDer);
 }
 
 // ============================================================================
