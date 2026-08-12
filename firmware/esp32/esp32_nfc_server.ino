@@ -1,14 +1,14 @@
 /*
  * ============================================================================
  * PROYECTO Wall-E / Robot Gualí — ESP32 Firmware
- * Lector NFC PN532 + Pantalla LCD 16x2 I2C + 2 Servomotores + Servidor Web
+ * Lector NFC PN532 + Pantalla LCD 16x2 (Pines independientes) + 2 Servomotores
  * ============================================================================
  */
 
 #include <Adafruit_PN532.h>
+#include <BitBang_LiquidCrystal_I2C.h>
 #include <ESP32Servo.h>
 #include <ESPmDNS.h>
-#include <LiquidCrystal_I2C.h>
 #include <WebServer.h>
 #include <WiFi.h>
 #include <Wire.h>
@@ -26,10 +26,14 @@ const char *AP_PASSWORD = "Proyecto";
 WebServer server(80);
 
 // ==========================================
-// CONFIGURACIÓN PANTALLA LCD 16x2 I2C
+// CONFIGURACIÓN PANTALLA LCD 16x2 (Pines Independientes)
 // ==========================================
-// Dirección I2C común: 0x27 o 0x3F (compartida en bus SDA=21, SCL=22)
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+// Pines dedicados para la pantalla LCD para evitar conflictos I2C con el PN532
+const int PIN_LCD_SDA = 33; // GPIO 33 para SDA de la pantalla LCD
+const int PIN_LCD_SCL = 32; // GPIO 32 para SCL de la pantalla LCD
+
+// Instancia de LCD con asignación de pines dedicados
+BitBang_LiquidCrystal_I2C lcd(0x27, 16, 2, PIN_LCD_SDA, PIN_LCD_SCL);
 bool lcdConectado = false;
 
 // ==========================================
@@ -45,8 +49,9 @@ int anguloServoIzq = 90;
 int anguloServoDer = 90;
 
 // ==========================================
-// CONFIGURACIÓN LECTOR PN532 (I2C)
+// CONFIGURACIÓN LECTOR PN532 (I2C Hardware Principal)
 // ==========================================
+// El PN532 utiliza el bus I2C Hardware estándar en SDA = GPIO 21 y SCL = GPIO 22
 #define PN532_IRQ (-1)
 #define PN532_RESET (-1)
 
@@ -75,20 +80,18 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println(F("\n=========================================="));
-  Serial.println(F(" ROBOT WALL-E - NFC + SERVOS + LCD I2C   "));
+  Serial.println(F(" ROBOT WALL-E - CONFIGURACIÓN SIN CONFLICTOS "));
   Serial.println(F("=========================================="));
 
-  // Inicializar bus I2C (SDA = 21, SCL = 22)
-  Wire.begin(21, 22);
-
-  // 1. Inicializar Pantalla LCD 16x2 I2C
-  lcd.init();
+  // 1. Inicializar Pantalla LCD en pines independientes (SDA=33, SCL=32)
+  lcd.begin();
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.print("  ROBOT WALL-E  ");
   lcd.setCursor(0, 1);
   lcd.print(" Iniciando...   ");
   lcdConectado = true;
+  Serial.println(F("✅ Pantalla LCD 16x2 configurada en GPIO 33 (SDA) y GPIO 32 (SCL)."));
 
   // 2. Inicializar Servomotores SG90
   ESP32PWM::allocateTimer(0);
@@ -99,21 +102,22 @@ void setup() {
   servoBrazoIzquierdo.attach(PIN_SERVO_IZQ, 500, 2400);
   servoBrazoDerecho.attach(PIN_SERVO_DER, 500, 2400);
   
-  // Posición inicial de reposo (90°)
   servoBrazoIzquierdo.write(90);
   servoBrazoDerecho.write(90);
   Serial.println(F("✅ Servomotores inicializados en GPIO 18 y 19."));
 
-  // 3. Inicializar Lector NFC PN532
+  // 3. Inicializar Lector NFC PN532 en bus I2C principal (SDA=21, SCL=22)
+  Wire.begin(21, 22);
   nfc.begin();
+  
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (versiondata) {
     pn532Conectado = true;
     nfc.SAMConfig();
-    Serial.println(F("✅ Lector PN532 detectado e inicializado (I2C)."));
+    Serial.println(F("✅ Lector PN532 detectado e inicializado en GPIO 21 (SDA) y GPIO 22 (SCL)."));
     actualizarPantallaLCD("WALL-E LISTO", "Acerque tarjeta");
   } else {
-    Serial.println(F("❌ ERROR: No se encontró el lector PN532."));
+    Serial.println(F("❌ ERROR: No se encontró el lector PN532 en GPIO 21/22."));
     actualizarPantallaLCD("ERR: PN532", "No detectado");
   }
 
@@ -143,7 +147,7 @@ void setup() {
     Serial.println(WiFi.softAPIP());
   }
 
-  // 5. Configurar Rutas del Servidor Web
+  // 5. Configurar Servidor Web
   server.on("/", handleRoot);
   server.on("/api/status", handleStatus);
   server.begin();
@@ -166,14 +170,13 @@ void loop() {
 }
 
 // ============================================================================
-// FUNCIONES DE CONTROL DE SERVOMOTORES Y LCD
+// FUNCIONES DE PANTALLA LCD Y SERVOMOTORES
 // ============================================================================
 
 void actualizarPantallaLCD(String linea1, String linea2) {
   if (!lcdConectado) return;
   lcd.clear();
   
-  // Limitar cadenas a 16 caracteres para la pantalla 16x2
   if (linea1.length() > 16) linea1 = linea1.substring(0, 16);
   if (linea2.length() > 16) linea2 = linea2.substring(0, 16);
 
@@ -200,7 +203,7 @@ void moverServosAlDetectar() {
   servoBrazoDerecho.write(anguloServoDer);
   delay(350);
 
-  // Gesto 3: Regreso suave a posición de reposo (90°)
+  // Gesto 3: Regreso suave a posición neutra (90°)
   anguloServoIzq = 90;
   anguloServoDer = 90;
   servoBrazoIzquierdo.write(anguloServoIzq);
@@ -255,7 +258,7 @@ bool leerRFID() {
     Serial.print(F(" | DEC: "));
     Serial.println(ultimaTarjetaDecimal);
 
-    // 1. Mostrar información de la tarjeta en la pantalla LCD 16x2
+    // 1. Mostrar información en la pantalla LCD 16x2
     String lineaLcd1 = "HEX: " + ultimaTarjetaUID;
     String lineaLcd2 = "DEC: " + ultimaTarjetaDecimal;
     actualizarPantallaLCD(lineaLcd1, lineaLcd2);
@@ -318,17 +321,15 @@ void handleRoot() {
   <div class="card">
     <div class="header">
       <h1>🤖 ROBOT WALL-E</h1>
-      <p>Lector RFID PN532 + 2 Servos + LCD 16x2</p>
-      <span class="status-badge">● PN532 + SERVOS + LCD ACTIVOS (I2C)</span>
+      <p>Control NFC PN532 + 2 Servos + LCD 16x2 (Buses Separados)</p>
+      <span class="status-badge">● PN532 (GPIO 21/22) | LCD (GPIO 33/32)</span>
     </div>
 
-    <!-- RECUADRO HEXADECIMAL -->
     <div class="display-box" id="mainBox">
       <div class="display-label">🔑 CÓDIGO UID (HEXADECIMAL)</div>
       <div class="display-value" id="uidDisplay">Esperando tarjeta...</div>
     </div>
 
-    <!-- RECUADRO DECIMAL -->
     <div class="display-box" style="border-color: #16a34a;" id="decBox">
       <div class="display-label">🔢 CÓDIGO UID (DECIMAL WIEGAND)</div>
       <div class="display-value-dec" id="decDisplay">---</div>
@@ -351,12 +352,12 @@ void handleRoot() {
         <button class="terminal-btn" onclick="limpiarConsola()">Limpiar</button>
       </div>
       <div class="terminal-body" id="consoleBody">
-        <div class="log-line sys"><span class="time">[SISTEMA]</span> Servidor ESP32 listo. Lector PN532 y Servos activos.</div>
+        <div class="log-line sys"><span class="time">[SISTEMA]</span> ESP32 activo sin conflictos I2C. PN532 en GPIO 21/22 y LCD en GPIO 33/32.</div>
       </div>
     </div>
 
     <div class="footer">
-      ESP32 DevKit | Bus I2C SDA=21, SCL=22 | Servos GPIO 18 & 19
+      ESP32 DevKit | PN532 (SDA=21, SCL=22) | LCD 16x2 (SDA=33, SCL=32) | Servos (18, 19)
     </div>
   </div>
 
@@ -421,7 +422,6 @@ void handleRoot() {
   server.send(200, "text/html", html);
 }
 
-// API JSON para consultas web y Django
 void handleStatus() {
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
