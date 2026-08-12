@@ -156,17 +156,29 @@ class WalleNFCController {
     });
   }
 
-  // 📡 CONEXIÓN CON ESP32 HARDWARE EN RED LOCAL (http://192.168.1.72)
+  // 📡 CONEXIÓN CON ESP32 HARDWARE EN RED LOCAL (mDNS http://Wall-e.local o IP Configurable)
   async initESP32HardwareListener() {
+    let hostsParaProbar = [
+      localStorage.getItem('esp32_ip') || '',
+      'http://Wall-e.local',
+      'http://guali.local',
+      'http://192.168.1.72'
+    ].filter(h => h.trim() !== '');
+
+    let hostActivoIndex = 0;
+
     const consultarESP32 = async () => {
+      const hostActual = hostsParaProbar[hostActivoIndex];
+      const urlHost = hostActual.startsWith('http') ? hostActual : `http://${hostActual}`;
+
       try {
-        const res = await fetch('http://192.168.1.72/api/status?t=' + new Date().getTime());
+        const res = await fetch(`${urlHost}/api/status?t=` + new Date().getTime(), { signal: AbortSignal.timeout(1500) });
         const data = await res.json();
 
         // Si el ESP32 respondió correctamente, actualizar el indicador de estado
         if (this.nfcStatusBadge && this.nfcStatusText) {
           this.nfcStatusBadge.querySelector('.status-dot').className = "status-dot green";
-          this.nfcStatusText.innerText = "📡 ESP32 Hardware Conectado (192.168.1.72)";
+          this.nfcStatusText.innerText = `📡 ESP32 Conectado (${hostActual.replace('http://', '')})`;
         }
 
         // Si hay un nuevo UID escaneado por el PN532
@@ -179,7 +191,7 @@ class WalleNFCController {
           this.playWallESound();
 
           // Usar el valor decimal o hexadecimal para procesar en Django
-          const uidParaProcesar = data.decimal !== "---" ? data.decimal : data.uid;
+          const uidParaProcesar = (data.decimal && data.decimal !== "---") ? data.decimal : data.uid;
           
           if (this.nfcInput) {
             this.nfcInput.value = uidParaProcesar;
@@ -188,12 +200,17 @@ class WalleNFCController {
           this.procesarNFC(uidParaProcesar);
         }
       } catch (err) {
-        // ESP32 en espera o no alcanzable desde esta red
+        // Probar el siguiente host en la lista si falló la conexión
+        hostActivoIndex = (hostActivoIndex + 1) % hostsParaProbar.length;
+        if (this.nfcStatusBadge && this.nfcStatusText && hostActivoIndex === 0) {
+          this.nfcStatusBadge.querySelector('.status-dot').className = "status-dot yellow";
+          this.nfcStatusText.innerText = "📡 Buscando ESP32 en la red local (Wall-e.local / Wi-Fi)...";
+        }
       }
     };
 
-    // Consultar el estado del ESP32 cada 300 ms
-    setInterval(consultarESP32, 300);
+    // Consultar el estado del ESP32 cada 350 ms
+    setInterval(consultarESP32, 350);
   }
 
   async initAndroidNFC() {
