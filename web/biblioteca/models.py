@@ -2,10 +2,12 @@ from django.db import models
 from django.utils import timezone
 
 class Rol(models.Model):
-    nombre_rol = models.CharField(max_length=50, verbose_name="Nombre del Rol")
-    descripcion = models.CharField(max_length=150, blank=True, null=True, verbose_name="Descripción")
+    id_rol = models.AutoField(primary_key=True, db_column='id_rol')
+    nombre_rol = models.CharField(max_length=50, db_column='nombre_rol', verbose_name="Nombre del Rol")
+    descripcion = models.CharField(max_length=150, blank=True, null=True, db_column='descripcion', verbose_name="Descripción")
 
     class Meta:
+        db_table = 'roles'
         verbose_name = "Rol"
         verbose_name_plural = "Roles"
 
@@ -14,13 +16,14 @@ class Rol(models.Model):
 
 
 class Alumno(models.Model):
-    nfc_uid = models.CharField(max_length=50, primary_key=True, verbose_name="NFC UID (Addr04)")
-    numero_control = models.CharField(max_length=20, unique=True, verbose_name="Matrícula / N° Control")
-    nombre = models.CharField(max_length=100, verbose_name="Nombre Completo")
-    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Rol")
-    acceso_permitido = models.BooleanField(default=True, verbose_name="Acceso Permitido")
+    nfc_uid = models.CharField(max_length=50, primary_key=True, db_column='nfc_uid', verbose_name="NFC UID (Addr04)")
+    numero_control = models.CharField(max_length=15, db_column='numero_control', verbose_name="Matrícula / N° Control")
+    nombre = models.CharField(max_length=100, db_column='nombre', verbose_name="Nombre Completo")
+    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True, db_column='id_rol', verbose_name="Rol")
+    acceso_permitido = models.BooleanField(default=True, db_column='acceso_permitido', verbose_name="Acceso Permitido")
 
     class Meta:
+        db_table = 'alumnos'
         verbose_name = "Alumno"
         verbose_name_plural = "Alumnos"
 
@@ -29,10 +32,12 @@ class Alumno(models.Model):
 
 
 class Area(models.Model):
-    nombre_area = models.CharField(max_length=100, verbose_name="Nombre del Área")
-    ubicacion = models.CharField(max_length=100, verbose_name="Ubicación")
+    id_area = models.AutoField(primary_key=True, db_column='id_area')
+    nombre_area = models.CharField(max_length=100, db_column='nombre_area', verbose_name="Nombre del Área")
+    ubicacion = models.CharField(max_length=100, db_column='ubicacion', verbose_name="Ubicación")
 
     class Meta:
+        db_table = 'areas'
         verbose_name = "Área"
         verbose_name_plural = "Áreas"
 
@@ -47,14 +52,16 @@ class Libro(models.Model):
         ('En Reparacion', 'En Reparación'),
     ]
 
-    nfc_uid = models.CharField(max_length=50, unique=True, null=True, blank=True, verbose_name="NFC UID (Addr04)")
-    titulo = models.CharField(max_length=150, verbose_name="Título del Libro")
-    autor = models.CharField(max_length=100, verbose_name="Autor")
-    isbn = models.CharField(max_length=20, unique=True, null=True, blank=True, verbose_name="ISBN")
-    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Área")
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='Disponible', verbose_name="Estado")
+    id_libro = models.AutoField(primary_key=True, db_column='id_libro')
+    nfc_uid = models.CharField(max_length=50, null=True, blank=True, db_column='nfc_uid', verbose_name="NFC UID (Addr04)")
+    titulo = models.CharField(max_length=150, db_column='titulo', verbose_name="Título del Libro")
+    autor = models.CharField(max_length=100, db_column='autor', verbose_name="Autor")
+    isbn = models.CharField(max_length=20, null=True, blank=True, db_column='isbn', verbose_name="ISBN")
+    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True, db_column='id_area', verbose_name="Área")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='Disponible', db_column='estado', verbose_name="Estado")
 
     class Meta:
+        db_table = 'libros'
         verbose_name = "Libro"
         verbose_name_plural = "Libros"
 
@@ -63,11 +70,13 @@ class Libro(models.Model):
 
 
 class RegistroAcceso(models.Model):
-    alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE, verbose_name="Alumno")
-    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Área")
-    fecha_hora = models.DateTimeField(default=timezone.now, verbose_name="Fecha y Hora")
+    id_acceso = models.AutoField(primary_key=True, db_column='id_acceso')
+    alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE, db_column='nfc_uid', verbose_name="Alumno")
+    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True, db_column='id_area', verbose_name="Área")
+    fecha_hora = models.DateTimeField(default=timezone.now, db_column='fecha_hora', verbose_name="Fecha y Hora")
 
     class Meta:
+        db_table = 'registros_acceso'
         verbose_name = "Registro de Acceso"
         verbose_name_plural = "Registros de Acceso"
         ordering = ['-fecha_hora']
@@ -77,12 +86,14 @@ class RegistroAcceso(models.Model):
 
 
 class Prestamo(models.Model):
-    libro = models.ForeignKey(Libro, on_delete=models.CASCADE, verbose_name="Libro")
-    alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE, verbose_name="Alumno")
-    fecha_prestamo = models.DateTimeField(default=timezone.now, verbose_name="Fecha de Préstamo")
-    fecha_devolucion = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Devolución")
+    id_prestamo = models.AutoField(primary_key=True, db_column='id_prestamo')
+    libro = models.ForeignKey(Libro, on_delete=models.CASCADE, db_column='id_libro', verbose_name="Libro")
+    alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE, db_column='nfc_uid', verbose_name="Alumno")
+    fecha_prestamo = models.DateTimeField(default=timezone.now, db_column='fecha_prestamo', verbose_name="Fecha de Préstamo")
+    fecha_devolucion = models.DateTimeField(null=True, blank=True, db_column='fecha_devolucion', verbose_name="Fecha de Devolución")
 
     class Meta:
+        db_table = 'prestamos'
         verbose_name = "Préstamo"
         verbose_name_plural = "Préstamos"
         ordering = ['-fecha_prestamo']

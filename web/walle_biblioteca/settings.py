@@ -65,7 +65,7 @@ WSGI_APPLICATION = 'walle_biblioteca.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'walle_biblioteca',
+        'NAME': 'gestion_biblioteca',
         'USER': 'root',
         'PASSWORD': 'root',
         'HOST': '127.0.0.1',
@@ -76,6 +76,7 @@ DATABASES = {
         },
     }
 }
+
 
 
 # Password validation

@@ -1,5 +1,11 @@
 # 🤖 Wall-e (Robot Gualí) — Sistema Robótico Bibliotecario con NFC y Web
 
+<p align="center">
+  <img src="docs/images/Resultado.jpeg" alt="Robot Wall-e Final" width="650" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"/>
+  <br>
+  <em><b>Wall-e (Gualí)</b> — Prototipo Robótico Bibliotecario en Funcionamiento</em>
+</p>
+
 Sistema integral de robótica educativa y gestión bibliotecaria que combina un autómata físico inspirador (**Wall-e / Gualí**), captura de tarjetas/etiquetas NFC mediante lectores PN532, control de microcontroladores (ESP32 y Arduino Nano) y una plataforma web centralizada desarrollada en **Django**.
 
 ---
@@ -9,10 +15,8 @@ Sistema integral de robótica educativa y gestión bibliotecaria que combina un 
 - [Arquitectura del Sistema](#-arquitectura-del-sistema)
 - [Estructura del Repositorio](#-estructura-del-repositorio)
 - [Hardware y Componentes](#-hardware-y-componentes)
+- [🛠️ Galería de Ensamble, Diseño y Construcción](#️-galería-de-ensamble-diseño-y-construcción)
 - [Software y Firmware](#-software-y-firmware)
-  - [Firmware ESP32 (Lector NFC + Servidor Web)](#1-firmware-esp32-lector-nfc--servidor-web)
-  - [Firmware Arduino Nano (Movimiento y Sensores)](#2-firmware-arduino-nano-movimiento-y-sensores)
-  - [Aplicación Web Django](#3-aplicación-web-django)
 - [Instalación y Configuración](#-instalación-y-configuración)
 - [Licencia y Créditos](#-licencia-y-créditos)
 
@@ -21,6 +25,12 @@ Sistema integral de robótica educativa y gestión bibliotecaria que combina un 
 ## 🎯 Visión del Proyecto
 
 El propósito de **Gualí (Wall-e)** es transformar el proceso tradicional de préstamo de libros en una experiencia táctil, interactiva y dinámica. 
+
+<p align="center">
+  <img src="docs/images/idea%20principal.jpeg" alt="Idea Principal de Wall-e" width="550" style="border-radius: 8px;"/>
+  <br>
+  <em>Concepción inicial y boceto estructural del robot Wall-e</em>
+</p>
 
 Al aproximar un libro equipado con etiqueta NFC a la mano del robot, el sensor **PN532** captura instantáneamente el identificador único (UID) en formatos **Hexadecimal** y **Decimal (Wiegand / Bytes)**, transmitiendo los datos de manera asíncrona tanto al servidor web incrustado del ESP32 como al sistema central de gestión bibliotecaria en **Django**.
 
@@ -45,7 +55,7 @@ graph TD
 ```text
 Wall-e/
 ├── docs/                             # Documentación técnica e imágenes
-│   ├── images/                       # Fotografías del robot e ilustraciones
+│   ├── images/                       # Fotografías del robot, prototipado y ensamble
 │   └── manual_tecnico.md             # Manual detallado de implementación técnica
 ├── firmware/                         # Código fuente de microcontroladores
 │   ├── esp32/                        # Firmware ESP32 (Lector NFC PN532 + Servidor Web)
@@ -74,15 +84,60 @@ Wall-e/
 
 ## 🔌 Hardware y Componentes
 
-| Componente | Modelo / Especificación | Función en el Robot |
-| :--- | :--- | :--- |
-| **Controlador Principal IoT** | ESP32 DevKit V1 | Manejo de stack TCP/IP, servidor web async, mDNS y lectura NFC |
-| **Sensor NFC / RFID** | Módulo PN532 (I2C) | Lectura de etiquetas NTAG/Mifare 13.56 MHz instaladas en libros |
-| **Controlador Secundario** | Arduino Nano | Control de servomotores y captura de datos de sensores ambientales |
-| **Pantalla** | LCD 16x2 con adaptador I2C (0x27) | Muestra de estados locales e indicadores de distancia y sonido |
-| **Actuadores** | Servomotores SG90 (x2) | Movimiento expresivo de los brazos de Wall-e |
-| **Sensores Auxiliares** | HC-SR04 y Detector de Sonido | Detección de proximidad de usuarios y nivel de sonido ambiente |
-| **Estructura / Chasis** | Madera personalizada (Estilo Wall-e) | Estructura no metálica que evita interferencias electromagnéticas (EMI) en la antena NFC |
+| Componente | Modelo / Especificación | Vista Previa | Función en el Robot |
+| :--- | :--- | :---: | :--- |
+| **Controlador Principal IoT** | ESP32 DevKit V1 | — | Manejo de stack TCP/IP, servidor web async, mDNS y lectura NFC |
+| **Sensor NFC / RFID** | Módulo PN532 (I2C) | <img src="docs/images/lector_rfid.jpeg" width="110"/> | Lectura de etiquetas NTAG/Mifare 13.56 MHz instaladas en libros |
+| **Pantalla Telemetría** | LCD 16x2 I2C (0x27) | <img src="docs/images/pantalla.jpeg" width="110"/> | Muestra de estados locales e indicadores de distancia y sonido |
+| **Actuadores** | Servomotores SG90 (x2) | <img src="docs/images/servomotor.jpeg" width="110"/> | Movimiento expresivo de los brazos de Wall-e |
+| **Fuente de Energía** | Batería Recargable | <img src="docs/images/bateria.jpeg" width="110"/> | Alimentación del sistema portátil |
+| **Detalles Estéticos** | Ojos y Placa Frontal | <img src="docs/images/ojos.jpeg" width="90"/> <br> <img src="docs/images/placa%20_frontal.jpeg" width="90"/> | Piezas frontales del chasis estilo Wall-e |
+| **Estructura / Chasis** | Madera personalizada | — | Estructura no metálica que evita interferencias electromagnéticas (EMI) en la antena NFC |
+
+---
+
+## 🛠️ Galería de Ensamble, Diseño y Construcción
+
+### 1. Planos, Medidas y Estructura Inicial
+| Dimensiones de Caja | Verificación de Medidas |
+| :---: | :---: |
+| <img src="docs/images/dimenciones_caja.jpeg" width="350"/> | <img src="docs/images/verificacion%20medidas.jpeg" width="350"/> |
+
+### 2. Proceso de Ensamble y Armado del Chasis
+<p align="center">
+  <img src="docs/images/Armado_1.jpeg" width="230"/>
+  <img src="docs/images/armado_1.1.jpeg" width="230"/>
+  <img src="docs/images/Armado_2.jpeg" width="230"/>
+</p>
+<p align="center">
+  <img src="docs/images/Armado_2.1.jpeg" width="350"/>
+  <img src="docs/images/Armado_2.3.jpeg" width="350"/>
+</p>
+
+### 3. Rediseño de Brazos y Mecanismos de Movimiento
+<p align="center">
+  <img src="docs/images/brazo.jpeg" width="320"/>
+  <img src="docs/images/redise%C3%B1o_brazos.jpeg" width="320"/>
+</p>
+
+### 4. Proceso de Pintura y Acabado Estético
+<p align="center">
+  <img src="docs/images/Pintado1.jpeg" width="230"/>
+  <img src="docs/images/pintado2.jpeg" width="230"/>
+  <img src="docs/images/pintado3.jpeg" width="230"/>
+</p>
+
+### 5. Secuencia de Poses y Estado Final de Avance
+<p align="center">
+  <img src="docs/images/pose_Avance.jpeg" width="220"/>
+  <img src="docs/images/pose_Avance2.jpeg" width="220"/>
+  <img src="docs/images/pose_Avance3.jpeg" width="220"/>
+</p>
+<p align="center">
+  <img src="docs/images/pose_Avance4.jpeg" width="220"/>
+  <img src="docs/images/pose_Avance5.jpeg" width="220"/>
+  <img src="docs/images/pose_Avance6.jpeg" width="220"/>
+</p>
 
 ---
 
